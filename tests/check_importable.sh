@@ -3,8 +3,16 @@
 bindir=${srcdir}/..
 
 # export the parent key as a public key
+if which tpm2_createprimary>/dev/null; then
+tpm2_createprimary --hierarchy=o --key-algorithm=ecc256 \
+                   --attributes="fixedtpm|fixedparent|sensitivedataorigin|userwithauth|restricted|decrypt|noda" \
+                   --key-context=srk.ctx || exit 1
+tpm2_readpublic --object-context=srk.ctx --format=pem --output=srk.pub || exit 1
+tpm2_flushcontext --transient-object || exit 1
+else
 prim=$(tsscreateprimary -ecc nistp256 -hi o -opem srk.pub | sed 's/Handle //') || exit 1
 tssflushcontext -ha ${prim} || exit 1
+fi
 
 # check an EC key with a cert and password
 openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:prime256v1 -out key.priv || exit 1

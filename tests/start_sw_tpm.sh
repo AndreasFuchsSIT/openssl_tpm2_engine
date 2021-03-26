@@ -32,8 +32,19 @@ if [ $a -eq 10 ]; then
     exit 1
 fi
 
+if which tpm2_startup >/dev/null; then
+echo "Using tpm2_* tools"
+CTX_PRIMARY=primary_owner_key.ctx
+tpm2_startup -c && \
+tpm2_createprimary --hierarchy=o --hash-algorithm=sha256 --key-algorithm=rsa \
+                   --key-context=${CTX_PRIMARY} && \
+tpm2_evictcontrol --hierarchy=o --object-context=${CTX_PRIMARY} 0x81000001 && \
+tpm2_flushcontext --transient-object
+else
+echo "Using tss* tools"
 tssstartup && \
 key=$(tsscreateprimary -hi o -st -rsa|sed 's/Handle //') && \
 tssevictcontrol -hi o -ho ${key} -hp 81000001 && \
 tssflushcontext -ha ${key}
+fi
 

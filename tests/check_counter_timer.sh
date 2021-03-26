@@ -2,13 +2,30 @@
 
 bindir=${srcdir}/..
 
+#Setup helpers for whichever tss to use
+if which tpm2_setclock>/dev/null; then
+tss_readclock_cmd() {
+tpm2_readclock|grep "^  clock: "|cut -d ":" -f 2
+}
+tss_clockset_cmd() {
+tpm2_setclock ${1}
+}
+else
+tss_readclock_cmd() {
+tssreadclock|awk '/TPMS_CLOCK_INFO clock/{print $3}'
+}
+tss_clockset_cmd() {
+tssclockset -hi o -clock ${1}
+}
+fi
+
 ##
 # create a policy based on the tpm current clock the failing policy
 # compares to current time and the passing one current time plus 10
 # minutes (provided it doesn't take 10 minutes to get to the test)
 ##
 # get current TPM clock value
-clock=$(tssreadclock|awk '/TPMS_CLOCK_INFO clock/{print $3}')
+clock=$(tss_readclock_cmd)
 # add 10 minutes in ms
 clock=$[$clock + 600000]
 # TPM_CC_PolicyAuthValue
@@ -38,7 +55,7 @@ openssl rsautl -verify -in tmp.msg -inkey key.pub -pubin || exit 1
 ##
 echo "Advance clock to expire key"
 clock=$[$clock+1000]
-tssclockset -hi o -clock ${clock} || exit 1
+tss_clockset_cmd ${clock} || exit 1
 
 ##
 # now the signing operation should fail

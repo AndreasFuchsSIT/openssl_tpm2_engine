@@ -52,6 +52,10 @@ else
     grep -q "TPM is in DA lockout" tmp.txt || exit 1
 fi
 # clear the TPM DA (this would normally be password protected)
+if which tpm2_dictionarylockout >/dev/null; then
+tpm2_dictionarylockout -c
+else
 tssdictionaryattacklockreset
+fi
 echo "This is a message" | 
 openssl rsautl -sign -engine tpm2 -keyform engine -inkey key.tpm -passin pass:passw0rd -out tmp.msg || exit 1

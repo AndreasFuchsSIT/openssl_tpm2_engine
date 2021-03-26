@@ -1,6 +1,15 @@
 #!/bin/bash
 set -x
 
+if which tpm2_clear>/dev/null; then
+tss_clear_cmd() {
+    tpm2_clear -c p
+}
+else
+tss_clear_cmd() {
+    tssclear -hi p
+}
+fi
 
 bindir=${srcdir}/..
 NV=81000101
@@ -39,7 +48,7 @@ for parent in ${NV2} ${NV}; do
     openssl rsautl -verify -in tmp.msg -inkey key.pub -pubin || exit 1
 done
 # on exit key 1 is parented to ${NV}
-tssclear -hi p || exit 1
+tss_clear_cmd || exit 1
 ${bindir}/create_tpm2_key --restricted -w keyrsa.priv keyrsa.tpm || exit 1
 ${bindir}/load_tpm2_key keyrsa.tpm ${NV} || exit 1
 
@@ -51,7 +60,7 @@ openssl rsautl -verify -in tmp.msg -inkey key.pub -pubin || exit 1
 # 1. check that a key with policy requires to be forced
 # 2. check the use of parent auth to load the NV area
 ##
-tssclear -hi p
+tss_clear_cmd
 ${bindir}/create_tpm2_key --restricted -c policies/policy_pcr.txt key2.tpm || exit 1
 ${bindir}/load_tpm2_key key2.tpm ${NV} && exit 1
 ${bindir}/load_tpm2_key --force key2.tpm ${NV} || exit 1
@@ -59,7 +68,7 @@ ${bindir}/load_tpm2_key --force key2.tpm ${NV} || exit 1
 ##
 # now try to parent to a key with authorization
 ##
-tssclear -hi p
+tss_clear_cmd
 ${bindir}/create_tpm2_key --auth --password Passw0rd --restricted key2.tpm || exit 1
 ${bindir}/load_tpm2_key key2.tpm ${NV} || exit 1
 ${bindir}/create_tpm2_key --auth-parent Passw0rd --parent ${NV} key3.tpm || exit 1
@@ -67,7 +76,7 @@ ${bindir}/load_tpm2_key --auth-parent Passw0rd key3.tpm ${NV2} || exit 1
 ##
 # finally try importable keys.  At the moment these only work for ecc parents
 ##
-tssclear -hi p
+tss_clear_cmd
 ${bindir}/create_tpm2_key --restricted -w keyecc.priv keyecc.tpm || exit 1
 ${bindir}/load_tpm2_key keyecc.tpm ${NV2} || exit 1
 openssl pkey -engine tpm2 -inform engine -in //nvkey:${NV2} -pubout -out keyecc.pub || exit 1

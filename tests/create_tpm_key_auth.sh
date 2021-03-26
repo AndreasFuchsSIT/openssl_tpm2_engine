@@ -5,7 +5,11 @@ bindir=${srcdir}/..
 auth=4ffsiurh4
 
 # change the authorization of the platform hierarchy
+if which tpm2_changeauth >/dev/null; then
+tpm2_changeauth -c platform ${auth}
+else
 tsshierarchychangeauth -hi p -pwdn ${auth}
+fi
 ##
 # test is
 # 1. create TPM internal private key
@@ -20,6 +24,10 @@ export SRKPIN=${auth}
 echo "This is a message" | openssl rsautl -sign -engine tpm2 -engine tpm2 -keyform engine -inkey key0.tpm -out tmp.msg || exit 1
 openssl rsautl -verify -in tmp.msg -inkey key0.pub -pubin || exit 1
 
+if which tpm2_changeauth >/dev/null; then
+tpm2_changeauth -c platform -p ${auth} ""
+else
 tsshierarchychangeauth -hi p -pwda ${auth}
+fi
 
 exit 0
