@@ -136,6 +136,8 @@ AC_SUBST(SHREXT)
 TSSTYPE=$tsslibs
 AC_SUBST(TSSTYPE)
 
+AM_CONDITIONAL(USE_SWTPM, test -x "${SWTPM}" -a -x "${SWTPM_IOCTL}")
+
 if test -x "${SWTPM}" -a -x "${SWTPM_IOCTL}"; then
    testtpm=swtpm
    unset TPMSERVER

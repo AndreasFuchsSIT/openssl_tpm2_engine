@@ -33,13 +33,25 @@ fail_connect.sh: tpm_server_found
 tpm_server_found:
 	@if [ -z "$(testtpm)" ]; then echo "ERROR: Can't run tests, no tpm server is found"; exit 1; fi
 
+if USE_SWTPM
+AM_TESTS_ENVIRONMENT = TPM_INTERFACE_TYPE=swtpm; export TPM_INTERFACE_TYPE; \
+	srcdir=$(abs_srcdir); export srcdir; \
+	OPENSSL_CONF=$(abs_srcdir)/openssl.cnf; export OPENSSL_CONF; \
+	TPMSERVER=$(TPMSERVER); export TPMSERVER; \
+	TSSTYPE=@TSSTYPE@; export TSSTYPE; \
+	SWTPM=$(SWTPM); export SWTPM; \
+	SWTPM_IOCTL=$(SWTPM_IOCTL); export SWTPM_IOCTL; \
+    TPM2TOOLS_TCTI=swtpm; export TPM2TOOLS_TCTI;
+else
 AM_TESTS_ENVIRONMENT = TPM_INTERFACE_TYPE=socsim; export TPM_INTERFACE_TYPE; \
 	srcdir=$(abs_srcdir); export srcdir; \
 	OPENSSL_CONF=$(abs_srcdir)/openssl.cnf; export OPENSSL_CONF; \
 	TPMSERVER=$(TPMSERVER); export TPMSERVER; \
 	TSSTYPE=@TSSTYPE@; export TSSTYPE; \
 	SWTPM=$(SWTPM); export SWTPM; \
-	SWTPM_IOCTL=$(SWTPM_IOCTL); export SWTPM_IOCTL;
+	SWTPM_IOCTL=$(SWTPM_IOCTL); export SWTPM_IOCTL; \
+    TPM2TOOLS_TCTI=mssim; export TPM2TOOLS_TCTI;
+endif
 
 TEST_EXTENSIONS = .sh
 
